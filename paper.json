@@ -1,0 +1,26 @@
+{
+  "BERT": {
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "author": "Jacob Devlin et al.",
+    "year": 2018,
+    "task": "Language Understanding",
+    "keywords": "Transformer, Pre-training, Bidirectional",
+    "abstract_summary": "BERT는 양방향 트랜스포머를 사전 훈련하여 다양한 자연어 처리 태스크에서 SOTA를 달성한 모델입니다."
+  },
+  "GPT-3": {
+    "title": "Language Models are Few-Shot Learners",
+    "author": "Tom B. Brown et al.",
+    "year": 2020,
+    "task": "Language Generation",
+    "keywords": "Transformer, Large Language Model, Few-shot",
+    "parameters": "175B"
+  },
+  "ResNet": {
+    "title": "Deep Residual Learning for Image Recognition",
+    "author": "Kaiming He et al.",
+    "year": 2015,
+    "task": "Image Recognition",
+    "keywords": "CNN, Residual Learning, ImageNet",
+    "note": "Skip connection을 도입하여 깊은 신경망의 학습을 가능하게 했습니다."
+  }
+}
