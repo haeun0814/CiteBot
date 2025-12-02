@@ -92,6 +92,7 @@ def build_paper_embedding_database():
     print(f"[INFO] {paper_embeddings.shape[0]}개의 임베딩으로 FAISS 인덱스를 구축합니다...")
     index = faiss.IndexFlatL2(EMB_DIM)
     index.add(paper_embeddings)
+    print(f"[INFO] 인덱스 빌드 완료 (ntotal={index.ntotal})")
     
     # 4. 인덱스 및 메타데이터 저장
     paper_PATH = "paper.faiss"
@@ -107,7 +108,7 @@ def build_paper_embedding_database():
         
     print("\n[성공] 논문 임베딩 데이터베이스 구축이 완료되었습니다!")
     print(f"-> FAISS 인덱스: {paper_PATH}")
-    print(f"-> 인덱스 맵핑: {paper_MAP_PATH}")
+    print(f"-> 인덱스 맵핑: {paper_MAP_PATH} (entries={len(index_to_model_map)})")
 
 # ----------------------------
 # 스크립트 실행
