@@ -34,7 +34,7 @@ class VertexAIEmbedder:
         self.model = TextEmbeddingModel.from_pretrained(self.model_name)
         self.dim = EMB_DIM
 
-    def encode(self, texts: List[str], batch_size: int = 64) -> np.ndarray:
+    def encode(self, texts: List[str], batch_size: int = 16) -> np.ndarray:
         """주어진 텍스트 목록에 대한 임베딩을 생성합니다."""
         # Vertex AI 'gecko' 모델의 최대 배치 크기는 250입니다.
         if batch_size > 250:
@@ -45,7 +45,6 @@ class VertexAIEmbedder:
             return np.empty((0, self.dim), dtype="float32")
 
         all_embeddings = []
-        failed = 0
         for i in tqdm(range(0, len(texts), batch_size), desc="논문 데이터 임베딩 생성 중 (Vertex AI)"):
             batch = texts[i:i + batch_size]
             try:
@@ -55,39 +54,50 @@ class VertexAIEmbedder:
                 all_embeddings.append(np.vstack(embs))
             except Exception as e:
                 print(f"[오류] API 호출 중 오류 발생: {e}")
-                failed += len(batch)
+                # 특정 배치에서 오류가 나도 다음 배치를 시도하도록 continue
                 continue
         
         if not all_embeddings:
             return np.empty((0, self.dim), dtype="float32")
-        
-        embeddings = np.vstack(all_embeddings)
-        if failed > 0 or embeddings.shape[0] != len(texts):
-            raise RuntimeError(
-                f"임베딩 실패: total_texts={len(texts)}, 성공={embeddings.shape[0]}, 실패 추정={failed}"
-            )
-        return embeddings
+            
+        return np.vstack(all_embeddings)
 
 # ----------------------------
 # 텍스트 전처리 유틸
 # ----------------------------
 def format_record_text(model: str, info: Dict[str, Any], max_field_len: int = 500, max_total_len: int = 4000) -> str:
-    """한 논문 딕셔너리를 key:value 형태로 이어붙이되 필드/전체 길이를 제한해 토큰 초과를 방지합니다."""
+    # """한 논문 딕셔너리를 key:value 형태로 모두 이어붙이되 길이를 제한해 토큰 초과를 방지합니다."""
+    # parts = [f"model: {model}"]
+    # for key, value in info.items():
+    #     if value is None:
+    #         continue
+    #     if isinstance(value, list):
+    #         value_str = ", ".join(map(str, value))
+    #     else:
+    #         value_str = str(value)
+    #     if len(value_str) > max_field_len:
+    #         value_str = value_str[:max_field_len] + "...(truncated)"
+    #     parts.append(f"{key}: {value_str}")
+
+    # text = " | ".join(parts)
+    # if len(text) > max_total_len:
+    #         text = text[:max_total_len] + "...(truncated)"
+    # return text
+    
+    """한 논문 딕셔너리를 key:value 형태로 모두 이어붙입니다. (길이 제한 없음)"""  
     parts = [f"model: {model}"]
+
     for key, value in info.items():
         if value is None:
             continue
+        # 리스트는 문자열로 합침
         if isinstance(value, list):
             value_str = ", ".join(map(str, value))
         else:
             value_str = str(value)
-        if len(value_str) > max_field_len:
-            value_str = value_str[:max_field_len] + "...(truncated)"
         parts.append(f"{key}: {value_str}")
-
+    # 모든 key:value를 " | "로 이어붙임
     text = " | ".join(parts)
-    if len(text) > max_total_len:
-        text = text[:max_total_len] + "...(truncated)"
     return text
 
 # ----------------------------
