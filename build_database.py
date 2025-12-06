@@ -7,6 +7,7 @@ import vertexai
 from vertexai.preview.language_models import TextEmbeddingModel
 from tqdm import tqdm
 import faiss
+import time
 
 
 # ----------------------------
@@ -28,7 +29,7 @@ EMB_DIM = 768                         # text-embedding-004 모델의 차원
 # 임베딩 생성 클래스
 # ----------------------------
 class VertexAIEmbedder:
-    """Vertex AI 임베딩 생성을 위한 클래스."""
+    """Vertex AI 임베딩 생성을 위한 클래스 (Retry 로직 추가됨)."""
     def __init__(self, model_name: str = EMB_MODEL):
         self.model_name = model_name
         self.model = TextEmbeddingModel.from_pretrained(self.model_name)
@@ -36,31 +37,90 @@ class VertexAIEmbedder:
 
     def encode(self, texts: List[str], batch_size: int = 16) -> np.ndarray:
         """주어진 텍스트 목록에 대한 임베딩을 생성합니다."""
-        # Vertex AI 'gecko' 모델의 최대 배치 크기는 250입니다.
+        # 배치 사이즈를 20에서 10으로 줄이는 것을 추천합니다 (요청 빈도 조절)
         if batch_size > 250:
-            print(f"[경고] 배치 크기({batch_size})가 Vertex AI 최대치(250)보다 큽니다. 250으로 조정합니다.")
             batch_size = 250
             
         if not texts:
             return np.empty((0, self.dim), dtype="float32")
 
         all_embeddings = []
-        for i in tqdm(range(0, len(texts), batch_size), desc="논문 데이터 임베딩 생성 중 (Vertex AI)"):
-            batch = texts[i:i + batch_size]
-            try:
-                # Vertex AI SDK를 사용하여 임베딩 생성
-                resp = self.model.get_embeddings(batch)
-                embs = [np.array(d.values, dtype="float32") for d in resp]
-                all_embeddings.append(np.vstack(embs))
-            except Exception as e:
-                print(f"[오류] API 호출 중 오류 발생: {e}")
-                # 특정 배치에서 오류가 나도 다음 배치를 시도하도록 continue
-                continue
         
+        # tqdm 진행바
+        for i in tqdm(range(0, len(texts), batch_size), desc="논문 데이터 임베딩 생성 중"):
+            batch = texts[i:i + batch_size]
+            
+            # --- 재시도(Retry) 로직 시작 ---
+            max_retries = 5       # 최대 5번까지 재시도
+            retry_delay = 10      # 첫 대기 시간 10초
+            success = False
+            
+            for attempt in range(max_retries):
+                try:
+                    # Vertex AI SDK 호출
+                    resp = self.model.get_embeddings(batch)
+                    embs = [np.array(d.values, dtype="float32") for d in resp]
+                    all_embeddings.append(np.vstack(embs))
+                    success = True
+                    
+                    # 성공했다면 API 부하를 줄이기 위해 짧게 대기 (선택사항)
+                    time.sleep(1) 
+                    break # 성공했으므로 재시도 루프 탈출
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    # 429 Quota 에러인 경우
+                    if "429" in error_msg or "Quota exceeded" in error_msg:
+                        print(f"\n[대기] 호출 한도 초과. {retry_delay}초 대기 후 재시도합니다... (시도 {attempt+1}/{max_retries})")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2 # 대기 시간을 2배로 늘림 (Exponential Backoff)
+                    else:
+                        print(f"\n[오류] 알 수 없는 오류 발생: {e}")
+                        break # 429 외의 에러는 중단
+            
+            # 재시도 해도 실패했다면, 데이터 정합성을 위해 전체 프로세스를 멈추는 게 안전합니다.
+            if not success:
+                raise RuntimeError(f"배치 처리 실패 (인덱스 {i}~{i+len(batch)}). 데이터 누락 방지를 위해 중단합니다.")
+            # --- 재시도 로직 끝 ---
+
         if not all_embeddings:
             return np.empty((0, self.dim), dtype="float32")
             
         return np.vstack(all_embeddings)
+# class VertexAIEmbedder:
+#     """Vertex AI 임베딩 생성을 위한 클래스."""
+#     def __init__(self, model_name: str = EMB_MODEL):
+#         self.model_name = model_name
+#         self.model = TextEmbeddingModel.from_pretrained(self.model_name)
+#         self.dim = EMB_DIM
+
+#     def encode(self, texts: List[str], batch_size: int = 20) -> np.ndarray:
+#         """주어진 텍스트 목록에 대한 임베딩을 생성합니다."""
+#         # Vertex AI 'gecko' 모델의 최대 배치 크기는 250입니다.
+#         if batch_size > 250:
+#             print(f"[경고] 배치 크기({batch_size})가 Vertex AI 최대치(250)보다 큽니다. 250으로 조정합니다.")
+#             batch_size = 250
+            
+#         if not texts:
+#             return np.empty((0, self.dim), dtype="float32")
+
+#         all_embeddings = []
+#         for i in tqdm(range(0, len(texts), batch_size), desc="논문 데이터 임베딩 생성 중 (Vertex AI)"):
+#             batch = texts[i:i + batch_size]
+#             try:
+#                 # Vertex AI SDK를 사용하여 임베딩 생성
+#                 resp = self.model.get_embeddings(batch)
+#                 embs = [np.array(d.values, dtype="float32") for d in resp]
+#                 all_embeddings.append(np.vstack(embs))
+#             except Exception as e:
+#                 print(f"[오류] API 호출 중 오류 발생: {e}")
+#                 # 특정 배치에서 오류가 나도 다음 배치를 시도하도록 continue
+#                 continue
+        
+#         if not all_embeddings:
+#             return np.empty((0, self.dim), dtype="float32")
+            
+#         return np.vstack(all_embeddings)
 
 # ----------------------------
 # 텍스트 전처리 유틸
