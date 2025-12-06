@@ -13,8 +13,9 @@ import faiss
 # 파일 로딩
 # ----------------------------
 print("[INFO] 논문 태그 데이터를 로드합니다...")
-with open('paper.json', 'r', encoding='utf-8') as f:
-    paper_DATA: Dict[str, Dict[str, Any]] = json.load(f)
+with open("citing_papers.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+paper_DATA = data
 
 # ----------------------------
 # GCP Vertex AI 설정
@@ -33,7 +34,7 @@ class VertexAIEmbedder:
         self.model = TextEmbeddingModel.from_pretrained(self.model_name)
         self.dim = EMB_DIM
 
-    def encode(self, texts: List[str], batch_size: int = 250) -> np.ndarray:
+    def encode(self, texts: List[str], batch_size: int = 16) -> np.ndarray:
         """주어진 텍스트 목록에 대한 임베딩을 생성합니다."""
         # Vertex AI 'gecko' 모델의 최대 배치 크기는 250입니다.
         if batch_size > 250:
@@ -61,6 +62,43 @@ class VertexAIEmbedder:
             
         return np.vstack(all_embeddings)
 
+# ----------------------------
+# 텍스트 전처리 유틸
+# ----------------------------
+def format_record_text(model: str, info: Dict[str, Any], max_field_len: int = 500, max_total_len: int = 4000) -> str:
+    # """한 논문 딕셔너리를 key:value 형태로 모두 이어붙이되 길이를 제한해 토큰 초과를 방지합니다."""
+    # parts = [f"model: {model}"]
+    # for key, value in info.items():
+    #     if value is None:
+    #         continue
+    #     if isinstance(value, list):
+    #         value_str = ", ".join(map(str, value))
+    #     else:
+    #         value_str = str(value)
+    #     if len(value_str) > max_field_len:
+    #         value_str = value_str[:max_field_len] + "...(truncated)"
+    #     parts.append(f"{key}: {value_str}")
+
+    # text = " | ".join(parts)
+    # if len(text) > max_total_len:
+    #         text = text[:max_total_len] + "...(truncated)"
+    # return text
+    
+    """한 논문 딕셔너리를 key:value 형태로 모두 이어붙입니다. (길이 제한 없음)"""  
+    parts = [f"model: {model}"]
+
+    for key, value in info.items():
+        if value is None:
+            continue
+        # 리스트는 문자열로 합침
+        if isinstance(value, list):
+            value_str = ", ".join(map(str, value))
+        else:
+            value_str = str(value)
+        parts.append(f"{key}: {value_str}")
+    # 모든 key:value를 " | "로 이어붙임
+    text = " | ".join(parts)
+    return text
 
 # ----------------------------
 # 데이터베이스 구축 메인 로직
@@ -74,9 +112,8 @@ def build_paper_embedding_database():
     paper_texts = []
     for model in paper_models:
         info = paper_DATA[model]
-        text = f"모델명: {model}. " + " ".join(
-            f"{key}: {value}" for key, value in info.items() if value is not None
-        )
+        # 모든 필드를 포함하되 필드/전체 길이를 제한해 토큰 초과를 방지합니다.
+        text = format_record_text(model, info)
         paper_texts.append(text)
         
     # 2. 텍스트 임베딩 생성
@@ -95,8 +132,8 @@ def build_paper_embedding_database():
     print(f"[INFO] 인덱스 빌드 완료 (ntotal={index.ntotal})")
     
     # 4. 인덱스 및 메타데이터 저장
-    paper_PATH = "paper.faiss"
-    paper_MAP_PATH = "paper_to_model.json"
+    paper_PATH = "citing_papers.faiss"
+    paper_MAP_PATH = "citing_papers_to_model.json"
 
     print(f"[INFO] FAISS 인덱스를 '{paper_PATH}' 파일로 저장합니다...")
     faiss.write_index(index, paper_PATH)
