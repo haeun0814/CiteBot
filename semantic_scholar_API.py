@@ -20,7 +20,6 @@ client = genai.Client(
 )
 
 
-
 # ================= GCP 요약 함수 =================
 def gcp_summarize_text(text: str):
     if not text.strip():
@@ -59,7 +58,7 @@ def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     # 원 논문 ID 가져오기
-    paper_url = f"https://api.semanticscholar.org/graph/v1/paper/arXiv:{arxiv_id}?fields=paperId,title"
+    paper_url = f"https://api.semanticscholar.org/graph/v1/paper/arXiv:{arxiv_id}?fields=paperId,title,abstract,authors,year,venue,fieldsOfStudy,isOpenAccess,url"
     r = requests.get(paper_url, headers=HEADERS)
     paper = r.json()
     paper_id = paper.get("paperId")
@@ -73,9 +72,26 @@ def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025
         "abstract", "isOpenAccess", "url"
     ]
 
-    # 리스트 대신 dict
+    # dict 생성
     citing_papers_dict = {}
 
+    # ========== 원 논문도 dict에 포함 ==========
+    citing_papers_dict[arxiv_id] = {
+        "title": paper.get("title"),
+        "authors": [a["name"] for a in paper.get("authors", [])],
+        "arxiv_id": arxiv_id,
+        "venue": paper.get("venue"),
+        "year": paper.get("year"),
+        "publicationTypes": None,
+        "citationCount": None,
+        "fieldsOfStudy": paper.get("fieldsOfStudy"),
+        "abstract": paper.get("abstract", ""),
+        "abstract_summary_gcp": "[요약 없음]",
+        "url": paper.get("url"),
+        "isOpenAccess": paper.get("isOpenAccess")
+    }
+
+    # ========== 인용 논문 수집 ==========
     offset = 0
     limit = 10
 
@@ -127,14 +143,14 @@ def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025
     else:
         existing_data = {}
 
-    # dict 병합
+    # 병합
     existing_data.update(citing_papers_dict)
 
     # 저장
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(existing_data, f, ensure_ascii=False, indent=4)
 
-    print(f"총 {len(existing_data)}개의 인용 논문이 '{save_path}'에 저장/업데이트되었습니다.")
+    print(f"총 {len(existing_data)}개의 논문이 '{save_path}'에 저장/업데이트되었습니다.")
 
 
 
@@ -169,8 +185,8 @@ def update_json_with_summaries(json_path: str):
 if __name__ == "__main__":
     json_file = r"C:\Users\sdyha\OneDrive\문서\GitHub\CiteBot\citing_papers.json"
 
-    # 1단계: 인용 논문 dict 형태로 저장
-    save_citing_papers_json_single("1706.03762", save_path=json_file)
+    # 1단계: 원 논문 + 인용 논문 dict 형태로 저장
+    save_citing_papers_json_single("2411.10109", save_path=json_file)
 
     # 2단계: 요약 업데이트
     update_json_with_summaries(json_file)
