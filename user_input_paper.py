@@ -24,7 +24,7 @@ def gcp_keyword_extract(text: str):
     """여러 abstracts에서 핵심 키워드 10개 추출"""
     try:
         prompt = (
-            "Extract 10 important research keywords from this combined text. "
+            "Extract 5 important research keywords from this combined text. "
             "Return only a comma-separated list of keywords:\n\n"
             + text
         )
@@ -80,7 +80,7 @@ def extract_user_interest_keywords(papers):
 
 
 # ================= 메인 기능 =================
-def process_user_input_titles(title_list):
+def process_user_input_titles(title_list, save_path="extracted_keywords.txt"):
     # 1. 제목 리스트로 abstracts 가져오기
     papers = []
     for t in title_list:
@@ -103,6 +103,15 @@ def process_user_input_titles(title_list):
     print("\n=== 추출된 관심사 키워드 ===")
     print(interest_keywords)
 
+    # 4. TXT 파일로 저장
+    try:
+        with open(save_path, "w", encoding="utf-8") as f:
+            for kw in interest_keywords:
+                f.write(kw + "\n")
+        print(f"\n[완료] 키워드가 '{save_path}' 파일로 저장되었습니다.")
+    except Exception as e:
+        print(f"[오류] 파일 저장 실패: {e}")
+
     return interest_keywords
 
 
@@ -113,4 +122,4 @@ if __name__ == "__main__":
         "Fine-Grained and Thematic Evaluation of LLMs in Social Deduction Game",
     ]
 
-    process_user_input_titles(titles)
+    process_user_input_titles(titles, save_path="keywords_output.txt")

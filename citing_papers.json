@@ -7973,5 +7973,74 @@
         "abstract_summary_gcp": "[요약 없음]",
         "url": "https://www.semanticscholar.org/paper/2976de866327756d79514863505ba3258d46c038",
         "isOpenAccess": false
+    },
+    "Fine-Grained and Thematic Evaluation of LLMs in Social Deduction Games": {
+        "title": "Fine-Grained and Thematic Evaluation of LLMs in Social Deduction Game",
+        "authors": [
+            "Byungjun Kim",
+            "Dayeon Seo",
+            "Bugeun Kim"
+        ],
+        "arxiv_id": null,
+        "venue": "IEEE Access",
+        "year": 2024,
+        "publicationTypes": null,
+        "citationCount": null,
+        "fieldsOfStudy": [
+            "Computer Science"
+        ],
+        "abstract": "Recent studies have investigated whether large language models (LLMs) can support obscured communication, which is characterized by core aspects such as inferring subtext and evading suspicions. To conduct the investigation, researchers have used social deduction games (SDGs) as their experimental environment, in which players conceal and infer specific information. However, prior work has often overlooked how LLMs should be evaluated in such settings. Specifically, we point out two limitations with the evaluation methods they employed. First, metrics used in prior studies are coarse-grained as they are based on overall game outcomes that often fail to capture event-level behaviors; Second, error analyses have lacked structured methodologies capable of producing insights that meaningfully support evaluation outcomes. To address these limitations, we propose a microscopic and systematic approach to the investigation. Specifically, we introduce six fine-grained metrics that resolve the first issue. To tackle the second issue, we conducted a thematic analysis and identified four major reasoning failures that undermine LLMs’ performance in obscured communication.",
+        "abstract_summary_gcp": "Recent studies examine large language models' (LLMs) ability to support obscured communication, which involves inferring subtext and evading suspicion, often using social deduction games (SDGs) as an experimental setting.\n\nHowever, the authors identify two key limitations in prior evaluation methods:\n1.  **Coarse-grained metrics:** These metrics rely on overall game outcomes, failing to capture detailed, event-level behaviors.\n2.  **Unstructured error analyses:** Previous error analyses lacked structured methodologies to produce meaningful insights.\n\nTo address these issues, the authors propose a microscopic and systematic evaluation approach. They introduce six fine-grained metrics to better resolve event-level analysis and conducted a thematic analysis, identifying four major reasoning failures that hinder LLMs' performance in obscured communication.",
+        "url": "https://www.semanticscholar.org/paper/f10ac22f42fffa58248c1f4b38c646639994fb94",
+        "isOpenAccess": false
+    },
+    "2511.06175": {
+        "title": "CSP4SDG: Constraint and Information-Theory Based Role Identification in Social Deduction Games with LLM-Enhanced Inference",
+        "authors": [
+            "Kaijie Xu",
+            "Fandi Meng",
+            "Clark Verbrugge",
+            "Simon Lucas"
+        ],
+        "arxiv_id": "2511.06175",
+        "venue": "",
+        "year": 2025,
+        "publicationTypes": null,
+        "citationCount": 0,
+        "fieldsOfStudy": [
+            "Computer Science"
+        ],
+        "abstract": "In Social Deduction Games (SDGs) such as Avalon, Mafia, and Werewolf, players conceal their identities and deliberately mislead others, making hidden-role inference a central and demanding task. Accurate role identification, which forms the basis of an agent's belief state, is therefore the keystone for both human and AI performance. We introduce CSP4SDG, a probabilistic, constraint-satisfaction framework that analyses gameplay objectively. Game events and dialogue are mapped to four linguistically-agnostic constraint classes-evidence, phenomena, assertions, and hypotheses. Hard constraints prune impossible role assignments, while weighted soft constraints score the remainder; information-gain weighting links each hypothesis to its expected value under entropy reduction, and a simple closed-form scoring rule guarantees that truthful assertions converge to classical hard logic with minimum error. The resulting posterior over roles is fully interpretable and updates in real time. Experiments on three public datasets show that CSP4SDG (i) outperforms LLM-based baselines in every inference scenario, and (ii) boosts LLMs when supplied as an auxiliary\"reasoning tool.\"Our study validates that principled probabilistic reasoning with information theory is a scalable alternative-or complement-to heavy-weight neural models for SDGs.",
+        "abstract_summary_gcp": "The paper introduces CSP4SDG, a probabilistic, constraint-satisfaction framework designed to objectively analyze gameplay in Social Deduction Games (SDGs) like Avalon, Mafia, and Werewolf. Addressing the central challenge of hidden-role inference, CSP4SDG maps game events and dialogue into four linguistically-agnostic constraint classes: evidence, phenomena, assertions, and hypotheses.\n\nHard constraints are used to prune impossible role assignments, while weighted soft constraints score the remaining possibilities. These soft constraints employ information-gain weighting, linking hypotheses to their expected value under entropy reduction, and a specialized scoring rule ensures truthful assertions converge to classical hard logic with minimum error. This process generates an interpretable posterior over roles that updates in real time.\n\nExperiments on three public datasets demonstrate that CSP4SDG significantly outperforms LLM-based baselines in every inference scenario and boosts LLM performance when supplied as an auxiliary reasoning tool. The study concludes that principled probabilistic reasoning with information theory offers a scalable and effective alternative or complement to heavy-weight neural models for SDGs.",
+        "url": "https://www.semanticscholar.org/paper/64e9b7375c713dfeeed8108b28725c1f1ee1b850",
+        "isOpenAccess": false
+    },
+    "2509.25541": {
+        "title": "Vision-Zero: Scalable VLM Self-Improvement via Strategic Gamified Self-Play",
+        "authors": [
+            "Qinsi Wang",
+            "Bo Liu",
+            "Tianyi Zhou",
+            "Jing Shi",
+            "Yueqian Lin",
+            "Yiran Chen",
+            "Hai Li",
+            "Kun Wan",
+            "Wentian Zhao"
+        ],
+        "arxiv_id": "2509.25541",
+        "venue": "arXiv.org",
+        "year": 2025,
+        "publicationTypes": [
+            "JournalArticle"
+        ],
+        "citationCount": 4,
+        "fieldsOfStudy": [
+            "Computer Science"
+        ],
+        "abstract": "Although reinforcement learning (RL) can effectively enhance the reasoning capabilities of vision-language models (VLMs), current methods remain heavily dependent on labor-intensive datasets that require extensive manual construction and verification, leading to extremely high training costs and consequently constraining the practical deployment of VLMs. To address this challenge, we propose Vision-Zero, a domain-agnostic framework enabling VLM self-improvement through competitive visual games generated from arbitrary image pairs. Specifically, Vision-Zero encompasses three main attributes: (1) Strategic Self-Play Framework: Vision-Zero trains VLMs in\"Who Is the Spy\"-style games, where the models engage in strategic reasoning and actions across multiple roles. Through interactive gameplay, models autonomously generate their training data without human annotation. (2) Gameplay from Arbitrary Images: Unlike existing gamified frameworks, Vision-Zero can generate games from arbitrary images, thereby enhancing the model's reasoning ability across diverse domains and showing strong generalization to different tasks. We demonstrate this versatility using three distinct types of image datasets: CLEVR-based synthetic scenes, charts, and real-world images. (3) Sustainable Performance Gain: We introduce Iterative Self-Play Policy Optimization (Iterative-SPO), a novel training algorithm that alternates between Self-Play and reinforcement learning with verifiable rewards (RLVR), mitigating the performance plateau often seen in self-play-only training and achieving sustained long-term improvements. Despite using label-free data, Vision-Zero achieves state-of-the-art performance on reasoning, chart question answering, and vision-centric understanding tasks, surpassing other annotation-based methods. Models and code has been released at https://github.com/wangqinsi1/Vision-Zero.",
+        "abstract_summary_gcp": "Vision-Zero is a novel, domain-agnostic framework designed to enable Vision-Language Models (VLMs) to self-improve their reasoning capabilities, addressing the current limitation of heavy reliance on costly, human-annotated datasets for reinforcement learning.\n\nThe framework is characterized by three main attributes:\n\n1.  **Strategic Self-Play Framework:** Vision-Zero trains VLMs by having them play multi-role, \"Who Is the Spy\"-style competitive visual games. Through this interactive gameplay, the models autonomously generate their own training data, eliminating the need for human annotation.\n2.  **Gameplay from Arbitrary Images:** Unlike existing gamified approaches, Vision-Zero can create games from any image pair, supporting diverse domains like synthetic scenes (CLEVR), charts, and real-world images. This broad applicability enhances the VLM's reasoning ability and ensures strong generalization across various tasks.\n3.  **Sustainable Performance Gain:** It introduces **Iterative Self-Play Policy Optimization (Iterative-SPO)**, a new training algorithm that alternates between Self-Play and reinforcement learning with verifiable rewards (RLVR). This method prevents performance plateaus common in self-play-only training, leading to sustained, long-term improvements.\n\nDespite using only label-free data, Vision-Zero achieves state-of-the-art performance on critical tasks such as reasoning, chart question answering, and vision-centric understanding, surpassing methods that depend on human annotations. Models and code are publicly available.",
+        "url": "https://www.semanticscholar.org/paper/b5eeff55c73861fec39e6b02019dd76a32bb698c",
+        "isOpenAccess": false
     }
 }

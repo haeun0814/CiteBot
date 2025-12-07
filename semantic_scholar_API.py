@@ -9,10 +9,8 @@ SERVICE_ACCOUNT_FILE = r"C:\Users\sdyha\OneDrive\바탕 화면\cohesive-sign-480
 PROJECT_ID = "cohesive-sign-480005-i5"
 MODEL = "gemini-2.5-flash"
 
-# 환경 변수로 서비스 계정 등록
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_FILE
 
-# GenAI 클라이언트 생성
 client = genai.Client(
     vertexai=True,
     project="cohesive-sign-480005-i5",
@@ -31,16 +29,13 @@ def gcp_summarize_text(text: str):
             contents=prompt,
         )
 
-        if hasattr(response, "text") and response.text and response.text.strip():
+        if hasattr(response, "text") and response.text:
             return response.text.strip()
 
-        elif response.candidates and response.candidates[0].content.parts:
+        if response.candidates and response.candidates[0].content.parts:
             return response.candidates[0].content.parts[0].text.strip()
 
-        else:
-            print("Gemini 응답이 비어있습니다. 입력 텍스트 길이:", len(text))
-            return "[요약 실패]"
-
+        return "[요약 실패]"
     except Exception as e:
         print("Gemini 요약 에러:", e)
         return "[요약 실패]"
@@ -51,20 +46,43 @@ def gcp_summarize_text(text: str):
 HEADERS = {"x-api-key": "F2EnQ7g01naKXhdeY3NZBgMCQP2BG0n2C0RDBRT8"}
 
 
+# ================= (추가) 제목으로 paperId 찾기 =================
+def get_paperId_from_title(title: str):
+    url = "https://api.semanticscholar.org/graph/v1/paper/search"
+    params = {
+        "query": title,
+        "limit": 1,
+        "fields": "paperId,title"
+    }
+
+    r = requests.get(url, params=params, headers=HEADERS)
+    data = r.json()
+
+    if "data" not in data or not data["data"]:
+        print(f"[오류] 제목으로 논문을 찾을 수 없음: {title}")
+        return None
+
+    paper_id = data["data"][0]["paperId"]
+    print(f"[검색 성공] '{title}' → paperId = {paper_id}")
+    return paper_id
+
+
+
 # ================= 인용 논문 저장 (dict 구조) =================
-def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025,
-                                   save_path="citing_papers.json"):
+def save_citing_papers_json_single_by_title(title: str, min_citations=0, max_year=2025,
+                                            save_path="citing_papers.json"):
+
+    # 1) 제목으로 paperId 찾기
+    paper_id = get_paperId_from_title(title)
+    if paper_id is None:
+        return
 
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-    # 원 논문 ID 가져오기
-    paper_url = f"https://api.semanticscholar.org/graph/v1/paper/arXiv:{arxiv_id}?fields=paperId,title,abstract,authors,year,venue,fieldsOfStudy,isOpenAccess,url"
+    # 원 논문 정보 요청
+    paper_url = f"https://api.semanticscholar.org/graph/v1/paper/{paper_id}?fields=paperId,title,abstract,authors,year,venue,fieldsOfStudy,isOpenAccess,url"
     r = requests.get(paper_url, headers=HEADERS)
     paper = r.json()
-    paper_id = paper.get("paperId")
-    if not paper_id:
-        print("논문을 찾을 수 없습니다.")
-        return
 
     fields = [
         "title", "authors", "externalIds", "venue", "year",
@@ -72,14 +90,13 @@ def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025
         "abstract", "isOpenAccess", "url"
     ]
 
-    # dict 생성
     citing_papers_dict = {}
 
-    # ========== 원 논문도 dict에 포함 ==========
-    citing_papers_dict[arxiv_id] = {
+    # 원 논문 포함
+    citing_papers_dict[title] = {
         "title": paper.get("title"),
         "authors": [a["name"] for a in paper.get("authors", [])],
-        "arxiv_id": arxiv_id,
+        "arxiv_id": paper.get("externalIds", {}).get("ArXiv"),
         "venue": paper.get("venue"),
         "year": paper.get("year"),
         "publicationTypes": None,
@@ -92,6 +109,7 @@ def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025
     }
 
     # ========== 인용 논문 수집 ==========
+
     offset = 0
     limit = 10
 
@@ -111,7 +129,6 @@ def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025
             if cited.get("year") is None or cited.get("year") > max_year:
                 continue
 
-            # key는 arxiv id 또는 title
             key = cited.get("externalIds", {}).get("ArXiv") or cited.get("title")
 
             citing_papers_dict[key] = {
@@ -133,24 +150,22 @@ def save_citing_papers_json_single(arxiv_id: str, min_citations=0, max_year=2025
         if len(data["data"]) < limit:
             break
 
-    # 기존 JSON 불러오기
+    # JSON 병합/저장
     if os.path.exists(save_path):
         with open(save_path, "r", encoding="utf-8") as f:
             try:
-                existing_data = json.load(f)
+                existing = json.load(f)
             except json.JSONDecodeError:
-                existing_data = {}
+                existing = {}
     else:
-        existing_data = {}
+        existing = {}
 
-    # 병합
-    existing_data.update(citing_papers_dict)
+    existing.update(citing_papers_dict)
 
-    # 저장
     with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(existing_data, f, ensure_ascii=False, indent=4)
+        json.dump(existing, f, ensure_ascii=False, indent=4)
 
-    print(f"총 {len(existing_data)}개의 논문이 '{save_path}'에 저장/업데이트되었습니다.")
+    print(f"총 {len(existing)}개의 논문이 '{save_path}'에 저장/업데이트되었습니다.")
 
 
 
@@ -162,7 +177,7 @@ def update_json_with_summaries(json_path: str):
 
     with open(json_path, "r", encoding="utf-8") as f:
         try:
-            papers = json.load(f)    # dict 로 로딩
+            papers = json.load(f)
         except json.JSONDecodeError:
             print("JSON 파일을 읽을 수 없습니다.")
             return
@@ -185,8 +200,11 @@ def update_json_with_summaries(json_path: str):
 if __name__ == "__main__":
     json_file = r"C:\Users\sdyha\OneDrive\문서\GitHub\CiteBot\citing_papers.json"
 
-    # 1단계: 원 논문 + 인용 논문 dict 형태로 저장
-    save_citing_papers_json_single("2411.10109", save_path=json_file)
+    # 제목으로 인용 논문 수집
+    save_citing_papers_json_single_by_title(
+        "Fine-Grained and Thematic Evaluation of LLMs in Social Deduction Games",
+        save_path=json_file
+    )
 
-    # 2단계: 요약 업데이트
+    # 요약 업데이트
     update_json_with_summaries(json_file)
